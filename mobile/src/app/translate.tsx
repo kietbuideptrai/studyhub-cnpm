@@ -12,9 +12,12 @@ import {
   View,
 } from 'react-native';
 
+import { Colors, Spacing } from '@/constants/theme';
 import { saveTranslationHistory } from '@/services/historyStorage';
 
-const languages = [
+const C = Colors.light;
+
+const LANGUAGES = [
   'English',
   'Vietnamese',
   'Japanese',
@@ -22,7 +25,7 @@ const languages = [
   'Chinese',
 ];
 
-const dictionaries: Record<string, Record<string, string>> = {
+const DICTIONARY: Record<string, Record<string, string>> = {
   'English-Vietnamese': {
     hello: 'Xin chào',
     'thank you': 'Cảm ơn',
@@ -51,156 +54,77 @@ const dictionaries: Record<string, Record<string, string>> = {
 
 function translateDemo(
   text: string,
-  sourceLanguage: string,
-  targetLanguage: string,
+  from: string,
+  to: string,
 ): string | null {
-  if (sourceLanguage === targetLanguage) {
-    return text.trim();
-  }
+  if (from === to) return text.trim();
 
-  const dictionaryKey = `${sourceLanguage}-${targetLanguage}`;
-  const dictionary = dictionaries[dictionaryKey];
-  const normalizedText = text.trim().toLowerCase();
-
-  return dictionary?.[normalizedText] ?? null;
-}
-
-type LanguagePickerProps = {
-  visible: boolean;
-  selectedLanguage: string;
-  onSelect: (language: string) => void;
-  onClose: () => void;
-};
-
-function LanguagePicker({
-  visible,
-  selectedLanguage,
-  onSelect,
-  onClose,
-}: LanguagePickerProps) {
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <Pressable style={styles.modalOverlay} onPress={onClose}>
-        <Pressable
-          style={styles.modalCard}
-          onPress={(event) => event.stopPropagation()}
-        >
-          <Text style={styles.modalTitle}>Select language</Text>
-
-          {languages.map((language) => (
-            <Pressable
-              key={language}
-              style={[
-                styles.languageOption,
-                selectedLanguage === language &&
-                  styles.selectedLanguageOption,
-              ]}
-              onPress={() => {
-                onSelect(language);
-                onClose();
-              }}
-            >
-              <Text
-                style={[
-                  styles.languageOptionText,
-                  selectedLanguage === language &&
-                    styles.selectedLanguageText,
-                ]}
-              >
-                {language}
-              </Text>
-
-              {selectedLanguage === language && (
-                <Text style={styles.checkmark}>✓</Text>
-              )}
-            </Pressable>
-          ))}
-
-          <Pressable style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </Pressable>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
+  return DICTIONARY[`${from}-${to}`]?.[text.trim().toLowerCase()] ?? null;
 }
 
 export default function TranslateScreen() {
-  const [sourceLanguage, setSourceLanguage] = useState('English');
-  const [targetLanguage, setTargetLanguage] = useState('Vietnamese');
+  const [from, setFrom] = useState('English');
+  const [to, setTo] = useState('Vietnamese');
+  const [picker, setPicker] = useState<'from' | 'to' | null>(null);
+  const [input, setInput] = useState('');
+  const [result, setResult] = useState('');
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [showSourceLanguages, setShowSourceLanguages] = useState(false);
-  const [showTargetLanguages, setShowTargetLanguages] = useState(false);
-
-  const [inputText, setInputText] = useState('');
-  const [translationResult, setTranslationResult] = useState('');
-  const [isTranslating, setIsTranslating] = useState(false);
-  const [resultIsError, setResultIsError] = useState(false);
+  const resetResult = () => {
+    setResult('');
+    setError(false);
+  };
 
   const handleTranslate = async () => {
     Keyboard.dismiss();
 
-    const originalText = inputText.trim();
+    const originalText = input.trim();
 
     if (!originalText) {
-      setResultIsError(true);
-      setTranslationResult('Please enter some text.');
+      setError(true);
+      setResult('Please enter some text.');
       return;
     }
 
-    if (isTranslating) return;
+    if (loading) return;
 
-    setIsTranslating(true);
-    setTranslationResult('');
-    setResultIsError(false);
+    setLoading(true);
+    resetResult();
 
     try {
-      const result = translateDemo(
-        originalText,
-        sourceLanguage,
-        targetLanguage,
-      );
+      const translatedText = translateDemo(originalText, from, to);
 
-      if (result === null) {
-        setResultIsError(true);
-        setTranslationResult(
-          'This sentence is not available in the demo dictionary. No history was saved.',
-        );
+      if (translatedText === null) {
+        setError(true);
+        setResult('Phrase not found in demo dictionary.');
         return;
       }
 
       await saveTranslationHistory({
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        sourceLanguage,
-        targetLanguage,
+        sourceLanguage: from,
+        targetLanguage: to,
         originalText,
-        translatedText: result,
+        translatedText,
         createdAt: new Date().toISOString(),
       });
 
-      setTranslationResult(result);
-    } catch (error) {
-      console.error('Translation or history saving failed:', error);
-      setResultIsError(true);
-      setTranslationResult(
-        'Could not save the result. Please try again.',
-      );
+      setResult(translatedText);
+    } catch (e) {
+      console.error('Translation or history saving failed:', e);
+      setError(true);
+      setResult('Could not save. Try again.');
     } finally {
-      setIsTranslating(false);
+      setLoading(false);
     }
   };
 
   const swapLanguages = () => {
-    setSourceLanguage(targetLanguage);
-    setTargetLanguage(sourceLanguage);
-    setInputText('');
-    setTranslationResult('');
-    setResultIsError(false);
+    setFrom(to);
+    setTo(from);
+    setInput('');
+    resetResult();
   };
 
   return (
@@ -208,12 +132,20 @@ export default function TranslateScreen() {
       style={styles.screen}
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.title}>StudyHub</Text>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.brand}>StudyHub</Text>
+          <Text style={styles.tagline}>Translate words and phrases</Text>
+        </View>
+        <View style={styles.logo}>
+          <Text style={styles.logoText}>S</Text>
+        </View>
+      </View>
+
       <Text style={styles.heading}>Translate</Text>
-      <Text style={styles.subtitle}>
-        Translate words and phrases with a demo dictionary.
-      </Text>
+      <Text style={styles.subtitle}>Translate with ease.</Text>
 
       <View style={styles.card}>
         <Text style={styles.label}>Languages</Text>
@@ -223,11 +155,11 @@ export default function TranslateScreen() {
             style={styles.languageBox}
             onPress={() => {
               Keyboard.dismiss();
-              setShowSourceLanguages(true);
+              setPicker('from');
             }}
           >
-            <Text style={styles.languageBoxLabel}>From</Text>
-            <Text style={styles.languageName}>{sourceLanguage}</Text>
+            <Text style={styles.muted}>From</Text>
+            <Text style={styles.languageName}>{from}</Text>
             <Text style={styles.chevron}>⌄</Text>
           </Pressable>
 
@@ -243,65 +175,51 @@ export default function TranslateScreen() {
             style={styles.languageBox}
             onPress={() => {
               Keyboard.dismiss();
-              setShowTargetLanguages(true);
+              setPicker('to');
             }}
           >
-            <Text style={styles.languageBoxLabel}>To</Text>
-            <Text style={styles.languageName}>{targetLanguage}</Text>
+            <Text style={styles.muted}>To</Text>
+            <Text style={styles.languageName}>{to}</Text>
             <Text style={styles.chevron}>⌄</Text>
           </Pressable>
         </View>
 
-        <Text style={styles.label}>Text to translate</Text>
+        <Text style={styles.label}>Your text</Text>
 
         <TextInput
           style={styles.textInput}
-          value={inputText}
+          value={input}
           onChangeText={(text) => {
-            setInputText(text);
-            setTranslationResult('');
-            setResultIsError(false);
+            setInput(text);
+            resetResult();
           }}
           placeholder="Enter text here..."
-          placeholderTextColor="#8A8A8A"
+          placeholderTextColor={C.textSecondary}
           multiline
           textAlignVertical="top"
-          editable={!isTranslating}
+          editable={!loading}
           accessibilityLabel="Text to translate"
         />
 
         <Pressable
-          style={[
-            styles.translateButton,
-            isTranslating && styles.disabledButton,
-          ]}
+          style={[styles.button, loading && styles.disabledButton]}
           onPress={handleTranslate}
-          disabled={isTranslating}
+          disabled={loading}
         >
-          {isTranslating ? (
+          {loading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.translateButtonText}>Translate</Text>
+            <Text style={styles.buttonText}>Translate</Text>
           )}
         </Pressable>
 
-        {translationResult !== '' && (
-          <View
-            style={[
-              styles.resultCard,
-              resultIsError && styles.errorCard,
-            ]}
-          >
-            <Text style={styles.resultLabel}>
-              {resultIsError ? 'Notice' : 'Translation'}
+        {result !== '' && (
+          <View style={[styles.resultCard, error && styles.errorCard]}>
+            <Text style={[styles.resultLabel, error && styles.errorText]}>
+              {error ? 'Notice' : 'Result'}
             </Text>
-            <Text
-              style={[
-                styles.resultText,
-                resultIsError && styles.errorText,
-              ]}
-            >
-              {translationResult}
+            <Text style={[styles.resultText, error && styles.errorText]}>
+              {result}
             </Text>
           </View>
         )}
@@ -310,33 +228,67 @@ export default function TranslateScreen() {
       <View style={styles.infoCard}>
         <Text style={styles.infoTitle}>Demo mode</Text>
         <Text style={styles.infoText}>
-          This version uses a small built-in dictionary. Only supported
-          demo phrases are saved to translation history. It does not use
-          an online translation service.
+          Demo dictionary only. Supported phrases are saved to history.
         </Text>
       </View>
 
-      <LanguagePicker
-        visible={showSourceLanguages}
-        selectedLanguage={sourceLanguage}
-        onSelect={(language) => {
-          setSourceLanguage(language);
-          setTranslationResult('');
-          setResultIsError(false);
-        }}
-        onClose={() => setShowSourceLanguages(false)}
-      />
+      <Modal
+        visible={picker !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPicker(null)}
+      >
+        <Pressable
+          style={styles.overlay}
+          onPress={() => setPicker(null)}
+        >
+          <Pressable
+            style={styles.modalCard}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <Text style={styles.modalTitle}>Select language</Text>
 
-      <LanguagePicker
-        visible={showTargetLanguages}
-        selectedLanguage={targetLanguage}
-        onSelect={(language) => {
-          setTargetLanguage(language);
-          setTranslationResult('');
-          setResultIsError(false);
-        }}
-        onClose={() => setShowTargetLanguages(false)}
-      />
+            {LANGUAGES.map((language) => {
+              const selected =
+                language === (picker === 'from' ? from : to);
+
+              return (
+                <Pressable
+                  key={language}
+                  style={[
+                    styles.languageOption,
+                    selected && styles.selectedOption,
+                  ]}
+                  onPress={() => {
+                    if (picker === 'from') setFrom(language);
+                    else setTo(language);
+
+                    resetResult();
+                    setPicker(null);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.optionText,
+                      selected && styles.selectedText,
+                    ]}
+                  >
+                    {language}
+                  </Text>
+                  {selected && <Text style={styles.checkmark}>✓</Text>}
+                </Pressable>
+              );
+            })}
+
+            <Pressable
+              style={styles.cancelButton}
+              onPress={() => setPicker(null)}
+            >
+              <Text style={styles.cancelText}>Cancel</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScrollView>
   );
 }
@@ -344,105 +296,128 @@ export default function TranslateScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F5F7FB',
+    backgroundColor: C.background,
   },
   container: {
-    padding: 20,
-    paddingTop: 24,
-    paddingBottom: 40,
+    paddingHorizontal: Spacing.three + 6,
+    paddingTop: Spacing.four,
+    paddingBottom: Spacing.five,
   },
-  title: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#4263EB',
-    marginBottom: 6,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.four,
+  },
+  brand: {
+    color: C.primary,
+    fontSize: 23,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  tagline: {
+    color: C.textSecondary,
+    fontSize: 12,
+    marginTop: Spacing.half,
+  },
+  logo: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: C.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoText: {
+    color: '#FFFFFF',
+    fontSize: 23,
+    fontWeight: '800',
   },
   heading: {
+    color: C.text,
     fontSize: 30,
     fontWeight: '800',
-    color: '#182230',
   },
   subtitle: {
+    color: C.textSecondary,
     fontSize: 14,
-    color: '#667085',
-    marginTop: 8,
-    marginBottom: 22,
-    lineHeight: 21,
+    marginTop: Spacing.one,
+    marginBottom: Spacing.four,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 18,
+    backgroundColor: C.backgroundElement,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E7EAF0',
+    borderColor: C.border,
+    padding: Spacing.three,
   },
   label: {
+    color: C.text,
     fontSize: 14,
     fontWeight: '700',
-    color: '#344054',
-    marginBottom: 10,
+    marginBottom: Spacing.two,
   },
   languageRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 24,
+    gap: Spacing.two,
+    marginBottom: Spacing.four,
   },
   languageBox: {
     flex: 1,
-    minHeight: 76,
-    backgroundColor: '#F8FAFC',
+    minHeight: 72,
+    backgroundColor: C.background,
     borderWidth: 1,
-    borderColor: '#DCE2EA',
+    borderColor: C.border,
     borderRadius: 12,
-    padding: 10,
+    padding: Spacing.two,
     justifyContent: 'center',
   },
-  languageBoxLabel: {
+  muted: {
+    color: C.textSecondary,
     fontSize: 12,
-    color: '#667085',
-    marginBottom: 4,
+    marginBottom: Spacing.one,
   },
   languageName: {
+    color: C.text,
     fontSize: 14,
     fontWeight: '700',
-    color: '#182230',
   },
   chevron: {
     position: 'absolute',
     right: 9,
-    top: 26,
-    color: '#667085',
+    top: 24,
+    color: C.textSecondary,
     fontSize: 18,
   },
   swapButton: {
     width: 36,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: C.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   swapText: {
-    color: '#4263EB',
-    fontSize: 23,
+    color: C.primary,
+    fontSize: 22,
     fontWeight: '700',
   },
   textInput: {
-    minHeight: 130,
+    minHeight: 110,
     borderWidth: 1,
-    borderColor: '#DCE2EA',
+    borderColor: C.border,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    padding: 14,
+    backgroundColor: C.backgroundElement,
+    padding: Spacing.three - 2,
     fontSize: 16,
-    color: '#182230',
+    color: C.text,
     lineHeight: 23,
-    marginBottom: 16,
+    marginBottom: Spacing.three,
   },
-  translateButton: {
-    minHeight: 50,
-    backgroundColor: '#4263EB',
+  button: {
+    minHeight: 48,
+    backgroundColor: C.primary,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -450,106 +425,105 @@ const styles = StyleSheet.create({
   disabledButton: {
     opacity: 0.65,
   },
-  translateButtonText: {
+  buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },
   resultCard: {
-    marginTop: 18,
-    padding: 15,
-    backgroundColor: '#EEF4FF',
+    marginTop: Spacing.three,
+    padding: Spacing.three,
+    backgroundColor: C.primaryLight,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#C7D7FE',
+    borderColor: C.border,
   },
   resultLabel: {
+    color: C.primary,
     fontSize: 13,
     fontWeight: '700',
-    color: '#4263EB',
-    marginBottom: 8,
+    marginBottom: Spacing.two,
   },
   resultText: {
+    color: C.text,
     fontSize: 17,
     lineHeight: 25,
-    color: '#182230',
   },
   errorCard: {
-    backgroundColor: '#FFF5F5',
+    backgroundColor: '#FEF2F2',
     borderColor: '#FECACA',
   },
   errorText: {
-    color: '#B42318',
-    fontSize: 14,
+    color: C.error,
   },
   infoCard: {
-    marginTop: 16,
-    padding: 16,
-    backgroundColor: '#EEF2FF',
+    marginTop: Spacing.three,
+    padding: Spacing.three,
+    backgroundColor: C.primaryLight,
     borderRadius: 14,
   },
   infoTitle: {
+    color: C.primary,
     fontSize: 14,
     fontWeight: '700',
-    color: '#3447A5',
-    marginBottom: 6,
+    marginBottom: Spacing.one,
   },
   infoText: {
+    color: C.textSecondary,
     fontSize: 13,
-    color: '#475467',
-    lineHeight: 20,
+    lineHeight: 19,
   },
-  modalOverlay: {
+  overlay: {
     flex: 1,
     backgroundColor: 'rgba(16, 24, 40, 0.45)',
     justifyContent: 'center',
-    padding: 24,
+    padding: Spacing.four,
   },
   modalCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: C.backgroundElement,
     borderRadius: 18,
-    padding: 18,
+    padding: Spacing.three,
   },
   modalTitle: {
+    color: C.text,
     fontSize: 20,
     fontWeight: '800',
-    color: '#182230',
-    marginBottom: 12,
+    marginBottom: Spacing.two,
   },
   languageOption: {
     minHeight: 48,
-    paddingHorizontal: 12,
+    paddingHorizontal: Spacing.two,
     borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  selectedLanguageOption: {
-    backgroundColor: '#EEF2FF',
+  selectedOption: {
+    backgroundColor: C.backgroundSelected,
   },
-  languageOptionText: {
+  optionText: {
+    color: C.text,
     fontSize: 16,
-    color: '#344054',
   },
-  selectedLanguageText: {
-    color: '#4263EB',
+  selectedText: {
+    color: C.primary,
     fontWeight: '700',
   },
   checkmark: {
+    color: C.primary,
     fontSize: 18,
-    color: '#4263EB',
     fontWeight: '700',
   },
   cancelButton: {
-    marginTop: 12,
-    padding: 12,
+    marginTop: Spacing.two,
+    padding: Spacing.two,
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#EAECF0',
+    borderTopColor: C.border,
   },
-  cancelButtonText: {
+  cancelText: {
+    color: C.textSecondary,
     fontSize: 15,
     fontWeight: '700',
-    color: '#667085',
   },
 });

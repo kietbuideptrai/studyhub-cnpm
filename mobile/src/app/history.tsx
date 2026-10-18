@@ -1,6 +1,7 @@
 
 import { useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Pressable,
@@ -9,22 +10,34 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Colors, Spacing } from '@/constants/theme';
 import {
   clearTranslationHistory,
   getTranslationHistory,
   type TranslationHistoryItem,
 } from '@/services/historyStorage';
 
+const C = Colors.light;
+
 export default function HistoryScreen() {
+  const insets = useSafeAreaInsets();
+
   const [history, setHistory] = useState<TranslationHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadHistory = useCallback(async () => {
     setLoading(true);
-    const items = await getTranslationHistory();
-    setHistory(items);
-    setLoading(false);
+    try {
+      const items = await getTranslationHistory();
+      setHistory(items);
+    } catch (error) {
+      console.error('Failed to load translation history:', error);
+      Alert.alert('Error', 'Could not load translation history.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useFocusEffect(
@@ -34,69 +47,108 @@ export default function HistoryScreen() {
   );
 
   const handleClearHistory = () => {
-    Alert.alert(
-      'Clear history',
-      'Are you sure you want to delete all translation history?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
+    Alert.alert('Clear history', 'Delete all translation history?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
             await clearTranslationHistory();
             setHistory([]);
-          },
+          } catch (error) {
+            console.error('Failed to clear history:', error);
+            Alert.alert('Error', 'Could not clear history.');
+          }
         },
-      ],
-    );
+      },
+    ]);
+  };
+
+  const formatDate = (value: string) => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? value
+      : date.toLocaleString();
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.screen,
+        { paddingTop: insets.top + 20 },
+      ]}
+    >
       <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>StudyHub</Text>
+        <View style={styles.headerText}>
+          <Text style={styles.brand}>StudyHub</Text>
           <Text style={styles.heading}>Translation History</Text>
+          <Text style={styles.subtitle}>
+            Review your translated phrases.
+          </Text>
         </View>
 
-        {history.length > 0 && (
-          <Pressable onPress={handleClearHistory}>
+        {history.length > 0 && !loading && (
+          <Pressable
+            onPress={handleClearHistory}
+            style={styles.clearButton}
+            accessibilityRole="button"
+          >
             <Text style={styles.clearText}>Clear all</Text>
           </Pressable>
         )}
       </View>
 
       {loading ? (
-        <Text style={styles.message}>Loading history...</Text>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={C.primary} />
+          <Text style={styles.message}>Loading history...</Text>
+        </View>
       ) : (
         <FlatList
           data={history}
           keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={
-            history.length === 0 ? styles.emptyList : styles.list
+            history.length === 0
+              ? styles.emptyList
+              : styles.list
           }
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyTitle}>No translation history yet</Text>
+            <View style={styles.emptyCard}>
+              <View style={styles.emptyIcon}>
+                <Text style={styles.emptyEmoji}>🕘</Text>
+              </View>
+              <Text style={styles.emptyTitle}>
+                No history yet
+              </Text>
               <Text style={styles.message}>
-                Your translated text will appear here.
+                Your translated phrases will appear here.
               </Text>
             </View>
           }
           renderItem={({ item }) => (
             <View style={styles.card}>
-              <Text style={styles.languages}>
-                {item.sourceLanguage} → {item.targetLanguage}
+              <View style={styles.languageBadge}>
+                <Text style={styles.languages}>
+                  {item.sourceLanguage} → {item.targetLanguage}
+                </Text>
+              </View>
+
+              <Text style={styles.label}>Original</Text>
+              <Text style={styles.content}>
+                {item.originalText}
               </Text>
 
-              <Text style={styles.label}>Original text</Text>
-              <Text style={styles.content}>{item.originalText}</Text>
+              <View style={styles.divider} />
 
               <Text style={styles.label}>Translation</Text>
-              <Text style={styles.content}>{item.translatedText}</Text>
+              <Text style={styles.translation}>
+                {item.translatedText}
+              </Text>
 
               <Text style={styles.date}>
-                {new Date(item.createdAt).toLocaleString()}
+                {formatDate(item.createdAt)}
               </Text>
             </View>
           )}
@@ -107,85 +159,141 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    padding: 20,
-    paddingTop: 55,
+    backgroundColor: C.background,
+    paddingHorizontal: Spacing.three + 6,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    gap: Spacing.two,
+    marginBottom: Spacing.four,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333333',
+  headerText: {
+    flex: 1,
+  },
+  brand: {
+    color: C.primary,
+    fontSize: 23,
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
   heading: {
+    color: C.text,
     fontSize: 25,
-    fontWeight: 'bold',
-    color: '#222222',
-    marginTop: 8,
+    fontWeight: '800',
+    marginTop: Spacing.two,
+  },
+  subtitle: {
+    color: C.textSecondary,
+    fontSize: 13,
+    marginTop: Spacing.one,
+  },
+  clearButton: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    backgroundColor: C.backgroundElement,
+    borderRadius: 10,
   },
   clearText: {
-    color: '#c62828',
-    fontWeight: '600',
+    color: C.error,
+    fontWeight: '700',
+    fontSize: 13,
   },
   list: {
-    paddingBottom: 24,
+    paddingBottom: Spacing.five,
   },
   emptyList: {
     flexGrow: 1,
     justifyContent: 'center',
+    paddingBottom: Spacing.five,
   },
-  emptyContainer: {
+  center: {
+    flex: 1,
     alignItems: 'center',
-    padding: 20,
+    justifyContent: 'center',
+  },
+  emptyCard: {
+    alignItems: 'center',
+    backgroundColor: C.backgroundElement,
+    borderRadius: 20,
+    padding: Spacing.five,
+  },
+  emptyIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 20,
+    backgroundColor: C.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.three,
+  },
+  emptyEmoji: {
+    fontSize: 28,
   },
   emptyTitle: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333333',
+    color: C.text,
+    fontSize: 18,
+    fontWeight: '800',
     textAlign: 'center',
   },
   message: {
-    fontSize: 15,
-    color: '#777777',
+    color: C.textSecondary,
+    fontSize: 14,
+    lineHeight: 21,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: Spacing.two,
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 14,
+    backgroundColor: C.backgroundElement,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: C.border,
+    padding: Spacing.three,
+    marginBottom: Spacing.three,
+  },
+  languageBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: C.primaryLight,
+    borderRadius: 8,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
+    marginBottom: Spacing.two,
   },
   languages: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#444444',
-    marginBottom: 10,
+    color: C.primary,
+    fontSize: 13,
+    fontWeight: '700',
   },
   label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#777777',
-    marginTop: 8,
-    marginBottom: 4,
+    color: C.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: Spacing.two,
+    marginBottom: Spacing.one,
   },
   content: {
+    color: C.text,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: C.border,
+    marginTop: Spacing.two,
+  },
+  translation: {
+    color: C.text,
     fontSize: 16,
-    color: '#222222',
+    lineHeight: 23,
+    fontWeight: '600',
   },
   date: {
-    fontSize: 12,
-    color: '#888888',
-    marginTop: 12,
+    color: C.textSecondary,
+    fontSize: 11,
+    marginTop: Spacing.three,
+    textAlign: 'right',
   },
 });
