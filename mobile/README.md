@@ -1,56 +1,120 @@
-# Welcome to your Expo app 👋
+# StudyHub
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## 1. Giới thiệu dự án
 
-## Get started
+StudyHub là dự án ứng dụng hỗ trợ học tập, được phát triển trong khuôn khổ môn Công nghệ phần mềm (CNPM).
 
-1. Install dependencies
+Dự án được thực hiện theo nhóm, sử dụng Git và GitHub để quản lý mã nguồn, phối hợp phát triển và kiểm tra chất lượng phần mềm.
 
-   ```bash
-   npm install
-   ```
+## 2. Công nghệ sử dụng
 
-2. Start the app
+### Ứng dụng di động
 
-   ```bash
-   npx expo start
-   ```
+- React Native
+- Expo
+- TypeScript
+- Expo Router
+- AsyncStorage
 
-In the output, you'll find options to open the app in a
+### Công cụ phát triển và kiểm tra
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- Git và GitHub
+- ESLint
+- GitHub Actions
+- Node.js và npm
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 3. Các chức năng hiện tại
 
-## Get a fresh project
+- **Trang chủ (Home):** Màn hình chính của ứng dụng.
+- **Dịch văn bản (Translate):** Chức năng dịch mẫu để kiểm tra giao diện và luồng sử dụng.
+- **Lịch sử dịch (History):** Hiển thị các nội dung đã dịch.
+- **Lưu trữ cục bộ:** Sử dụng AsyncStorage để lưu lịch sử dịch và duy trì dữ liệu sau khi mở lại ứng dụng.
 
-When you're ready, run:
+**Lưu ý:** Chức năng dịch hiện tại vẫn sử dụng dữ liệu mẫu, chưa tích hợp API dịch từ backend.
 
-```bash
-npm run reset-project
+## 4. Cấu trúc dự án
+
+```text
+studyhub-cnpm/
+├── .github/
+│   └── workflows/
+│       └── mobile-ci.yml
+├── mobile/
+│   ├── src/
+│   │   └── app/
+│   ├── assets/
+│   ├── package.json
+│   └── tsconfig.json
+└── README.md
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 5. Hướng dẫn cài đặt và chạy ứng dụng
 
-### Other setup steps
+### Yêu cầu
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+- Đã cài đặt Node.js và npm.
+- Có Expo Go trên điện thoại tương thích hoặc trình giả lập phù hợp.
 
-## Learn more
+### Bước 1: Truy cập thư mục mobile
 
-To learn more about developing your project with Expo, look at the following resources:
+Mở Terminal hoặc CMD tại thư mục gốc của dự án, sau đó chạy:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+cd mobile
+```
 
-## Join the community
+### Bước 2: Cài đặt các thư viện
 
-Join our community of developers creating universal apps.
+```bash
+npm install
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### Bước 3: Khởi chạy ứng dụng
+
+```bash
+npx expo start
+```
+
+### Bước 4: Mở ứng dụng trên điện thoại
+
+Mở Expo Go trên điện thoại và quét mã QR được hiển thị trong Terminal để chạy ứng dụng.
+
+## 6. Kiểm tra chất lượng mã nguồn và CI/CD
+
+Dự án sử dụng GitHub Actions để tự động kiểm tra ứng dụng di động khi có các sự kiện Git phù hợp với cấu hình workflow.
+
+Các bước kiểm tra bao gồm:
+
+- Cài đặt thư viện bằng `npm ci`.
+- Kiểm tra quy tắc mã nguồn bằng ESLint.
+- Kiểm tra kiểu dữ liệu TypeScript bằng `npx tsc --noEmit`.
+
+File cấu hình CI nằm tại:
+
+`.github/workflows/mobile-ci.yml`
+
+## 7. Trạng thái phát triển
+
+Các công việc đã thực hiện và kiểm tra:
+
+- Khởi tạo ứng dụng React Native bằng Expo.
+- Xây dựng các màn hình Home, Translate và History.
+- Lưu lịch sử dịch bằng AsyncStorage.
+- Kiểm thử các màn hình và khả năng duy trì lịch sử sau khi mở lại ứng dụng.
+- Thiết lập GitHub Actions để kiểm tra mã nguồn và TypeScript.
+
+Các công việc tiếp theo:
+
+- Tích hợp API dịch với backend.
+- Tiếp tục phát triển và hoàn thiện các chức năng của StudyHub.
+- Bổ sung kiểm thử và cập nhật tài liệu theo tiến độ thực tế của nhóm.
+
+## 8. Quản lý mã nguồn
+
+Nhóm sử dụng Git và GitHub để quản lý mã nguồn, phát triển trên các nhánh riêng và sử dụng Pull Request để xem xét thay đổi trước khi hợp nhất vào nhánh đích.
+
+## 9. Mục đích sử dụng
+
+Dự án được xây dựng phục vụ mục đích học tập và thực hành phát triển phần mềm theo nhóm.
+
+.
