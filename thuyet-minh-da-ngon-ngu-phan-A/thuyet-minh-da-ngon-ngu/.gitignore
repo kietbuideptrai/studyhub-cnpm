@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+.expo/
+.vercel/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+*.db
+*.db-journal
+apps/api/src/generated/
+.DS_Store

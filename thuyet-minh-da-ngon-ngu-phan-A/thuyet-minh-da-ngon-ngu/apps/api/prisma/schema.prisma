@@ -1,0 +1,50 @@
+// ERD: xem docs/erd.md
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+/// Ngon ngu ho tro (vi, en, ja, ko). `ttsLocale` dung cho expo-speech / Web Speech API.
+model Language {
+  code         String            @id
+  name         String
+  nativeName   String            @map("native_name")
+  ttsLocale    String            @map("tts_locale")
+  isActive     Boolean           @default(true) @map("is_active")
+  sortOrder    Int               @default(0) @map("sort_order")
+  translations SpotTranslation[]
+
+  @@map("languages")
+}
+
+/// Diem tham quan. `qrCode` la noi dung ma QR dan o diem do.
+model Spot {
+  id           Int               @id @default(autoincrement())
+  slug         String            @unique
+  qrCode       String            @unique @map("qr_code")
+  latitude     Float
+  longitude    Float
+  imageUrl     String?           @map("image_url")
+  translations SpotTranslation[]
+
+  @@map("spots")
+}
+
+/// Noi dung thuyet minh cua 1 diem theo 1 ngon ngu (dich san, dua vao seed).
+model SpotTranslation {
+  id           Int      @id @default(autoincrement())
+  spotId       Int      @map("spot_id")
+  languageCode String   @map("language_code")
+  title        String
+  summary      String
+  narration    String
+  spot         Spot     @relation(fields: [spotId], references: [id], onDelete: Cascade)
+  language     Language @relation(fields: [languageCode], references: [code])
+
+  @@unique([spotId, languageCode])
+  @@map("spot_translations")
+}
