@@ -1,0 +1,23 @@
+# Render Blueprint: New + -> Blueprint -> chon repo. Xem docs/deploy.md
+services:
+  - type: web
+    name: thuyet-minh-api
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @tm/api build
+    startCommand: pnpm --filter @tm/api start:prod
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      # SQLite nam tren dia tam cua Render free: moi lan khoi dong se migrate + seed lai
+      - key: DATABASE_URL
+        value: file:./prod.db
+      # Dien URL web production sau khi deploy Vercel (vd https://thuyet-minh.vercel.app)
+      - key: CORS_ORIGINS
+        sync: false
+      # Cho phep moi ban preview cua PR
+      - key: CORS_ORIGIN_REGEX
+        value: ^https://.*\.vercel\.app$
