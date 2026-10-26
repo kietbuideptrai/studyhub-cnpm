@@ -1,2 +1,2 @@
-# studyhub-cnpm
-QuanLyHocTap_CNPM
+# DoAn-CNPM
+Multilingual artifact audio guide using QR codes
