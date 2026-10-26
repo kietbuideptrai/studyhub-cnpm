@@ -1,6 +1,0 @@
-node_modules
-dist
-pnpm-lock.yaml
-apps/api/src/generated
-apps/api/prisma/migrations
-.github/workflows/*.yml
