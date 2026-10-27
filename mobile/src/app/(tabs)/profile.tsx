@@ -113,6 +113,36 @@ export default function ProfileScreen() {
         })}
       </View>
 
+      <Text style={styles.sectionTitle}>Công cụ học tập</Text>
+      <View style={styles.learningActions}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push("/translate")}
+          style={({ pressed }) => [
+            styles.learningAction,
+            pressed && styles.languageOptionPressed,
+          ]}
+        >
+          <Text style={styles.learningActionTitle}>Dịch cụm từ</Text>
+          <Text style={styles.learningActionDescription}>
+            Bản demo Anh–Việt với các cụm từ thông dụng.
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push("/translation-history")}
+          style={({ pressed }) => [
+            styles.learningAction,
+            pressed && styles.languageOptionPressed,
+          ]}
+        >
+          <Text style={styles.learningActionTitle}>Lịch sử bản dịch</Text>
+          <Text style={styles.learningActionDescription}>
+            Xem hoặc xóa các bản dịch đã lưu.
+          </Text>
+        </Pressable>
+      </View>
+
       <Text style={styles.sectionTitle}>Lịch sử đã xem</Text>
       {localStorageError ? (
         <Text style={styles.storageError} accessibilityRole="alert">
@@ -253,6 +283,28 @@ const styles = StyleSheet.create({
   fontSizeLabel: {
     color: colors.ink,
     fontSize: 14,
+  },
+  learningActions: {
+    gap: 10,
+    marginBottom: 28,
+  },
+  learningAction: {
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    backgroundColor: colors.paper,
+  },
+  learningActionTitle: {
+    marginBottom: 4,
+    color: colors.ink,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  learningActionDescription: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 19,
   },
   historyFeedback: {
     gap: 12,

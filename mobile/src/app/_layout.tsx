@@ -34,6 +34,11 @@ function AppNavigator() {
           name="artifacts/[slug]"
           options={{ title: "Chi tiết hiện vật" }}
         />
+        <Stack.Screen name="translate" options={{ title: "Dịch cụm từ" }} />
+        <Stack.Screen
+          name="translation-history"
+          options={{ title: "Lịch sử bản dịch" }}
+        />
       </Stack>
     </>
   );

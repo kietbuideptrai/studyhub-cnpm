@@ -1,6 +1,8 @@
 # Mobile App
 
-Expo app for browsing artifacts, scanning QR codes, and listening to multilingual narration.
+Expo app for browsing artifacts, scanning QR codes, listening to multilingual narration, and trying a local English–Vietnamese phrase-translation demo.
+
+The phrase translator uses a small built-in dictionary; it is not a general-purpose translation service. Translation history is stored locally on the device.
 
 ## Requirements
 
