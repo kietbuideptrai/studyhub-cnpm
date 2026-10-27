@@ -1,0 +1,22 @@
+{
+  "artifactDetail": {
+    "slug": "tank-001",
+    "image_url": "https://example.test/tank-001.jpg",
+    "translation": {
+      "language_code": "en",
+      "title": "Historic tank",
+      "summary": "A historic vehicle in the collection.",
+      "content": "This tank served during the war. It is now preserved in the museum."
+    },
+    "available_languages": ["vi", "en", "zh"]
+  },
+  "artifactWithoutTranslation": {
+    "slug": "tank-001",
+    "image_url": "https://example.test/tank-001.jpg",
+    "translation": null,
+    "available_languages": ["vi", "en", "zh"]
+  },
+  "notFound": {
+    "message": "Không tìm thấy hiện vật"
+  }
+}
