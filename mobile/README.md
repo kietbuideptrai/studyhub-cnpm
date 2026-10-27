@@ -1,120 +1,43 @@
-# StudyHub
+# Mobile App
 
-## 1. Giới thiệu dự án
+Expo app for browsing artifacts, scanning QR codes, listening to multilingual narration, and trying a local English–Vietnamese phrase-translation demo.
 
-StudyHub là dự án ứng dụng hỗ trợ học tập, được phát triển trong khuôn khổ môn Công nghệ phần mềm (CNPM).
+The phrase translator uses a small built-in dictionary; it is not a general-purpose translation service. Translation history is stored locally on the device.
 
-Dự án được thực hiện theo nhóm, sử dụng Git và GitHub để quản lý mã nguồn, phối hợp phát triển và kiểm tra chất lượng phần mềm.
+## Requirements
 
-## 2. Công nghệ sử dụng
+- Node.js and npm
+- Expo Go installed on the test phone
+- A reachable backend running the API
 
-### Ứng dụng di động
+## Configure the API
 
-- React Native
-- Expo
-- TypeScript
-- Expo Router
-- AsyncStorage
+Create `mobile/.env.local` from `.env.example` and set `EXPO_PUBLIC_API_URL`.
 
-### Công cụ phát triển và kiểm tra
+- For a deployed backend, use its HTTPS base URL, such as `https://api.example.com`.
+- For a local backend and a physical phone, use the computer's LAN IP and API port, such as `http://192.168.1.10:3000`. The phone and computer must be on the same network, the backend must be reachable through the firewall, and `localhost` will not work from the phone.
+- For the Android emulator, use the emulator's host address supported by your setup rather than the phone's LAN address.
 
-- Git và GitHub
-- ESLint
-- GitHub Actions
-- Node.js và npm
+After changing the environment file, restart the Expo dev server so the public variable is reloaded.
 
-## 3. Các chức năng hiện tại
+## Run in Expo Go
 
-- **Trang chủ (Home):** Màn hình chính của ứng dụng.
-- **Dịch văn bản (Translate):** Chức năng dịch mẫu để kiểm tra giao diện và luồng sử dụng.
-- **Lịch sử dịch (History):** Hiển thị các nội dung đã dịch.
-- **Lưu trữ cục bộ:** Sử dụng AsyncStorage để lưu lịch sử dịch và duy trì dữ liệu sau khi mở lại ứng dụng.
-
-**Lưu ý:** Chức năng dịch hiện tại vẫn sử dụng dữ liệu mẫu, chưa tích hợp API dịch từ backend.
-
-## 4. Cấu trúc dự án
-
-```text
-studyhub-cnpm/
-├── .github/
-│   └── workflows/
-│       └── mobile-ci.yml
-├── mobile/
-│   ├── src/
-│   │   └── app/
-│   ├── assets/
-│   ├── package.json
-│   └── tsconfig.json
-└── README.md
-```
-
-## 5. Hướng dẫn cài đặt và chạy ứng dụng
-
-### Yêu cầu
-
-- Đã cài đặt Node.js và npm.
-- Có Expo Go trên điện thoại tương thích hoặc trình giả lập phù hợp.
-
-### Bước 1: Truy cập thư mục mobile
-
-Mở Terminal hoặc CMD tại thư mục gốc của dự án, sau đó chạy:
-
-```bash
-cd mobile
-```
-
-### Bước 2: Cài đặt các thư viện
+From this directory:
 
 ```bash
 npm install
+npm start
 ```
 
-### Bước 3: Khởi chạy ứng dụng
+Scan the Expo QR code with Expo Go. Keep the phone and development computer on the same network when using LAN mode. If the backend is deployed, verify it first at `/api/health`.
+
+## Validation
 
 ```bash
-npx expo start
+npm run typecheck
+npm run lint
 ```
 
-### Bước 4: Mở ứng dụng trên điện thoại
+Use [the mobile test checklist](../docs/MOBILE-TEST-CHECKLIST.md) to verify the demo flow on a physical device. Test camera permission and all available TTS voices on the actual target device; voice availability depends on its installed system voices.
 
-Mở Expo Go trên điện thoại và quét mã QR được hiển thị trong Terminal để chạy ứng dụng.
-
-## 6. Kiểm tra chất lượng mã nguồn và CI/CD
-
-Dự án sử dụng GitHub Actions để tự động kiểm tra ứng dụng di động khi có các sự kiện Git phù hợp với cấu hình workflow.
-
-Các bước kiểm tra bao gồm:
-
-- Cài đặt thư viện bằng `npm ci`.
-- Kiểm tra quy tắc mã nguồn bằng ESLint.
-- Kiểm tra kiểu dữ liệu TypeScript bằng `npx tsc --noEmit`.
-
-File cấu hình CI nằm tại:
-
-`.github/workflows/mobile-ci.yml`
-
-## 7. Trạng thái phát triển
-
-Các công việc đã thực hiện và kiểm tra:
-
-- Khởi tạo ứng dụng React Native bằng Expo.
-- Xây dựng các màn hình Home, Translate và History.
-- Lưu lịch sử dịch bằng AsyncStorage.
-- Kiểm thử các màn hình và khả năng duy trì lịch sử sau khi mở lại ứng dụng.
-- Thiết lập GitHub Actions để kiểm tra mã nguồn và TypeScript.
-
-Các công việc tiếp theo:
-
-- Tích hợp API dịch với backend.
-- Tiếp tục phát triển và hoàn thiện các chức năng của StudyHub.
-- Bổ sung kiểm thử và cập nhật tài liệu theo tiến độ thực tế của nhóm.
-
-## 8. Quản lý mã nguồn
-
-Nhóm sử dụng Git và GitHub để quản lý mã nguồn, phát triển trên các nhánh riêng và sử dụng Pull Request để xem xét thay đổi trước khi hợp nhất vào nhánh đích.
-
-## 9. Mục đích sử dụng
-
-Dự án được xây dựng phục vụ mục đích học tập và thực hành phát triển phần mềm theo nhóm.
-
-.
+APK generation through EAS is optional for the MVP. Use Expo Go for the demo unless an installable package is specifically required.

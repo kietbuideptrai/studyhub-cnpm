@@ -1,18 +1,66 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { LanguageProvider, useLanguage } from "@/context/LanguageContext";
+import { LocalDataProvider, useLocalData } from "@/context/LocalDataContext";
+import { colors } from "@/theme";
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+function AppNavigator() {
+  const { isLoading } = useLanguage();
+  const { isLoading: isLocalDataLoading } = useLocalData();
 
-SplashScreen.preventAutoHideAsync();
+  if (isLoading || isLocalDataLoading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <>
+      <StatusBar style="dark" />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.paper },
+          headerTintColor: colors.ink,
+          headerTitleStyle: { fontWeight: "700" },
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="artifacts/[slug]"
+          options={{ title: "Chi tiết hiện vật" }}
+        />
+        <Stack.Screen name="translate" options={{ title: "Dịch cụm từ" }} />
+        <Stack.Screen
+          name="translation-history"
+          options={{ title: "Lịch sử bản dịch" }}
+        />
+      </Stack>
+    </>
   );
 }
+
+export default function RootLayout() {
+  return (
+    <SafeAreaProvider>
+      <LanguageProvider>
+        <LocalDataProvider>
+          <AppNavigator />
+        </LocalDataProvider>
+      </LanguageProvider>
+    </SafeAreaProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.background,
+  },
+});
