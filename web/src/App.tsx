@@ -5,16 +5,26 @@ import {
   useLocation,
   useParams,
 } from "react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useArtifacts } from "./hooks/useArtifacts";
 import { useArtifact } from "./hooks/useArtifact";
 import { useSpeech } from "./hooks/useSpeech";
+import { useViewHistory } from "./hooks/useViewHistory";
 import type {
   ArtifactDetail,
   ArtifactListItem,
   Language,
 } from "../../shared/types";
 import { LanguagePicker } from "./components/LanguagePicker";
+import { FontSizePicker } from "./components/FontSizePicker";
+import {
+  AdminDashboard,
+  AdminLayout,
+  AdminLoginPage,
+  ProtectedRoute,
+} from "./components/AdminPages";
+import { AdminArtifactFormPage } from "./components/AdminArtifactForm";
+import { LanguageProvider } from "./context/LanguageContext";
 import { useLanguage } from "./context/LanguageContext";
 import { getLanguageLabel } from "./utils/language";
 
@@ -47,7 +57,10 @@ function AppLayout() {
           </Link>
         </nav>
 
-        <LanguagePicker />
+        <div className="header-preferences">
+          <LanguagePicker />
+          <FontSizePicker />
+        </div>
       </header>
 
       <main id="main-content">
@@ -68,25 +81,96 @@ function AppLayout() {
 
 function HomePage() {
   const location = useLocation();
+  const { language } = useLanguage();
+  const { state, retry } = useArtifacts(language);
+  const { slugs, clearHistory } = useViewHistory();
+  const artifactsBySlug =
+    state.status === "success"
+      ? new Map(state.data.map((artifact) => [artifact.slug, artifact]))
+      : null;
+  const recentlyViewed =
+    artifactsBySlug === null
+      ? []
+      : slugs.flatMap((slug) => {
+          const artifact = artifactsBySlug.get(slug);
+          return artifact ? [artifact] : [];
+        });
 
   return (
-    <section className="hero content-width">
-      <p className="eyebrow">BẢO TÀNG TRONG TẦM TAY</p>
-      <h1>Mỗi hiện vật đều có một câu chuyện.</h1>
-      <p className="hero-copy">
-        Khám phá những dấu mốc lịch sử qua thuyết minh bằng ngôn ngữ bạn chọn.
-      </p>
-      <Link
-        className="button button-primary"
-        to={{ pathname: "/artifacts", search: location.search }}
+    <>
+      <section className="hero content-width">
+        <p className="eyebrow">BẢO TÀNG TRONG TẦM TAY</p>
+        <h1>Mỗi hiện vật đều có một câu chuyện.</h1>
+        <p className="hero-copy">
+          Khám phá những dấu mốc lịch sử qua thuyết minh bằng ngôn ngữ bạn chọn.
+        </p>
+        <Link
+          className="button button-primary"
+          to={{ pathname: "/artifacts", search: location.search }}
+        >
+          Khám phá hiện vật <span aria-hidden="true">→</span>
+        </Link>
+        <div className="hero-note">
+          <span className="status-dot" aria-hidden="true" />
+          <span>Khám phá câu chuyện bằng năm ngôn ngữ.</span>
+        </div>
+      </section>
+
+      <section
+        className="page-section content-width recent-history"
+        aria-labelledby="recent-history-title"
       >
-        Khám phá hiện vật <span aria-hidden="true">→</span>
-      </Link>
-      <div className="hero-note">
-        <span className="status-dot" aria-hidden="true" />
-        <span>Nội dung hiện vật sẽ được cập nhật tại đây.</span>
-      </div>
-    </section>
+        <div className="recent-history-heading">
+          <h2 id="recent-history-title">Đã xem gần đây</h2>
+          {slugs.length > 0 ? (
+            <button
+              className="text-button recent-history-clear"
+              onClick={clearHistory}
+              type="button"
+            >
+              Xóa lịch sử
+            </button>
+          ) : null}
+        </div>
+        {state.status === "loading" ? (
+          <div className="loading-state" role="status" aria-live="polite">
+            <span className="loading-spinner" aria-hidden="true" />
+            <span>Đang tải hiện vật đã xem...</span>
+          </div>
+        ) : state.status === "error" ? (
+          <div className="empty-state error-state" role="alert">
+            <h2>Không thể tải hiện vật đã xem</h2>
+            <p>{state.error.message}</p>
+            <button
+              className="button button-primary"
+              onClick={retry}
+              type="button"
+            >
+              Thử lại
+            </button>
+          </div>
+        ) : recentlyViewed.length > 0 ? (
+          <div className="artifact-grid recent-history-grid">
+            {recentlyViewed.map((artifact) => (
+              <ArtifactCard
+                key={artifact.slug}
+                artifact={artifact}
+                language={language}
+                search={location.search}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="recent-history-empty" role="status">
+            <p>
+              {slugs.length === 0
+                ? "Các hiện vật bạn đã xem sẽ xuất hiện tại đây."
+                : `Không có hiện vật đã xem bằng ${getLanguageLabel(language)}.`}
+            </p>
+          </div>
+        )}
+      </section>
+    </>
   );
 }
 
@@ -244,6 +328,13 @@ function ArtifactDetailPage() {
   const { slug } = useParams();
   const { language } = useLanguage();
   const { state, isNotFound, retry } = useArtifact(slug, language);
+  const { recordView } = useViewHistory();
+
+  useEffect(() => {
+    if (state.status === "success") {
+      recordView(state.data.slug);
+    }
+  }, [recordView, state]);
 
   return (
     <section className="page-section content-width">
@@ -314,49 +405,53 @@ function ArtifactDetailContent({
           <p className="detail-summary">{translation.summary}</p>
         </div>
         <div className="speech-controls">
-          {speech.unavailable ? (
-            <p className="speech-message" role="status">
-              Thiết bị không có giọng đọc {getLanguageLabel(language)}. Bạn vẫn có
-              thể đọc nội dung bên dưới.
-            </p>
+          {speech.status === "idle" ? (
+            <button
+              className="button button-listen"
+              type="button"
+              onClick={speech.play}
+              disabled={speech.voiceStatus === "unavailable"}
+              aria-label={`Nghe thuyết minh bằng ${getLanguageLabel(language)}`}
+            >
+              <span aria-hidden="true">▶</span> Nghe thuyết minh
+            </button>
           ) : (
             <>
-              {speech.status === "idle" ? (
-                <button
-                  className="button button-listen"
-                  type="button"
-                  onClick={speech.play}
-                  aria-label={`Nghe thuyết minh bằng ${getLanguageLabel(language)}`}
-                >
-                  <span aria-hidden="true">▶</span> Nghe thuyết minh
-                </button>
-              ) : (
-                <>
-                  <button
-                    className="button button-listen"
-                    type="button"
-                    onClick={
-                      speech.status === "paused"
-                        ? speech.resume
-                        : speech.pause
-                    }
-                  >
-                    <span aria-hidden="true">
-                      {speech.status === "paused" ? "▶" : "Ⅱ"}
-                    </span>
-                    {speech.status === "paused" ? "Tiếp tục" : "Tạm dừng"}
-                  </button>
-                  <button
-                    className="button button-stop"
-                    type="button"
-                    onClick={speech.stop}
-                  >
-                    Dừng
-                  </button>
-                </>
-              )}
+              <button
+                className="button button-listen"
+                type="button"
+                onClick={
+                  speech.status === "paused" ? speech.resume : speech.pause
+                }
+              >
+                <span aria-hidden="true">
+                  {speech.status === "paused" ? "▶" : "Ⅱ"}
+                </span>
+                {speech.status === "paused" ? "Tiếp tục" : "Tạm dừng"}
+              </button>
+              <button
+                className="button button-stop"
+                type="button"
+                onClick={speech.stop}
+              >
+                Dừng
+              </button>
             </>
           )}
+          {speech.voiceStatus === "unavailable" ? (
+            <p className="speech-message" role="status">
+              Chưa có giọng đọc {getLanguageLabel(language)} trên thiết bị. Bạn
+              vẫn có thể đọc đầy đủ nội dung bên dưới.
+            </p>
+          ) : speech.voiceStatus === "loading" ? (
+            <p className="speech-message" role="status">
+              Đang kiểm tra giọng đọc...
+            </p>
+          ) : speech.voiceStatus === "unknown" ? (
+            <p className="speech-message" role="status">
+              Chưa xác định được giọng đọc. Bạn vẫn có thể thử phát thuyết minh.
+            </p>
+          ) : null}
           {speech.error && (
             <p className="speech-message speech-error" role="alert">
               {speech.error}
@@ -437,6 +532,33 @@ function NotFoundPage() {
   );
 }
 
+function PublicApp() {
+  return (
+    <LanguageProvider>
+      <AppLayout />
+    </LanguageProvider>
+  );
+}
+
 export default function App() {
-  return <AppLayout />;
+  return (
+    <Routes>
+      <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/admin" element={<ProtectedRoute />}>
+        <Route element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route
+            path="artifacts/new"
+            element={<AdminArtifactFormPage mode="create" />}
+          />
+          <Route
+            path="artifacts/:id/edit"
+            element={<AdminArtifactFormPage mode="edit" />}
+          />
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
+      </Route>
+      <Route path="*" element={<PublicApp />} />
+    </Routes>
+  );
 }

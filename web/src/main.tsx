@@ -2,15 +2,18 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router";
 import App from "./App";
-import { LanguageProvider } from "./context/LanguageContext";
+import { AuthProvider } from "./context/AuthContext";
+import { FontSizeProvider } from "./context/FontSizeContext";
 import "./styles.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <LanguageProvider>
-        <App />
-      </LanguageProvider>
+      <FontSizeProvider>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </FontSizeProvider>
     </BrowserRouter>
   </React.StrictMode>,
 );

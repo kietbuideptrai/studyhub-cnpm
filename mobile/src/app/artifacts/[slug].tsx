@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
@@ -12,6 +12,7 @@ import type { Language } from "../../../../shared/types";
 import { ArtifactImage } from "@/components/ArtifactImage";
 import { EmptyState } from "@/components/EmptyState";
 import { useLanguage } from "@/context/LanguageContext";
+import { useLocalData } from "@/context/LocalDataContext";
 import { useArtifact } from "@/hooks/useArtifact";
 import { useSpeech } from "@/hooks/useSpeech";
 import { colors, styles as sharedStyles } from "@/theme";
@@ -21,15 +22,23 @@ export default function ArtifactDetailScreen() {
   const { slug: requestedSlug } = useLocalSearchParams<{ slug: string }>();
   const slug = Array.isArray(requestedSlug) ? requestedSlug[0] : requestedSlug;
   const { language, setLanguage, storageError } = useLanguage();
+  const { favoriteSlugs, fontScale, recordViewed, toggleFavorite } = useLocalData();
   const { state, isNotFound, retry } = useArtifact(slug, language);
   const artifact = state.status === "success" ? state.data : null;
   const translation = artifact?.translation;
+  const isFavorite = slug ? favoriteSlugs.includes(slug) : false;
   const speech = useSpeech(translation?.content ?? "", language);
   const stopSpeech = speech.stop;
 
   useFocusEffect(
     useCallback(() => () => stopSpeech(), [stopSpeech]),
   );
+
+  useEffect(() => {
+    if (artifact && slug) {
+      recordViewed(slug);
+    }
+  }, [artifact, recordViewed, slug]);
 
   if (state.status === "loading") {
     return (
@@ -87,6 +96,10 @@ export default function ArtifactDetailScreen() {
           onChange={setLanguage}
           storageError={storageError}
         />
+        <FavoriteButton
+          isFavorite={isFavorite}
+          onPress={() => slug && toggleFavorite(slug)}
+        />
       </ScrollView>
     );
   }
@@ -105,9 +118,27 @@ export default function ArtifactDetailScreen() {
         onChange={setLanguage}
         storageError={storageError}
       />
+      <FavoriteButton
+        isFavorite={isFavorite}
+        onPress={() => slug && toggleFavorite(slug)}
+      />
       <Text style={styles.languageTag}>{getLanguageLabel(language)}</Text>
-      <Text style={styles.title}>{translation.title}</Text>
-      <Text style={styles.summary}>{translation.summary}</Text>
+      <Text
+        style={[
+          styles.title,
+          { fontSize: 30 * fontScale, lineHeight: 38 * fontScale },
+        ]}
+      >
+        {translation.title}
+      </Text>
+      <Text
+        style={[
+          styles.summary,
+          { fontSize: 16 * fontScale, lineHeight: 25 * fontScale },
+        ]}
+      >
+        {translation.summary}
+      </Text>
       <View style={styles.speechControls}>
         {speech.voiceAvailability === "unavailable" ? (
           <Text style={styles.speechMessage} accessibilityRole="alert">
@@ -167,12 +198,50 @@ export default function ArtifactDetailScreen() {
       </View>
       <View style={styles.article}>
         {paragraphs.map((paragraph, index) => (
-          <Text key={`${index}-${paragraph}`} style={styles.paragraph}>
+          <Text
+            key={`${index}-${paragraph}`}
+            style={[
+              styles.paragraph,
+              { fontSize: 17 * fontScale, lineHeight: 29 * fontScale },
+            ]}
+          >
             {paragraph}
           </Text>
         ))}
       </View>
     </ScrollView>
+  );
+}
+
+interface FavoriteButtonProps {
+  isFavorite: boolean;
+  onPress: () => void;
+}
+
+function FavoriteButton({ isFavorite, onPress }: FavoriteButtonProps) {
+  return (
+    <Pressable
+      accessibilityLabel={
+        isFavorite ? "Bỏ khỏi danh sách yêu thích" : "Thêm vào danh sách yêu thích"
+      }
+      accessibilityRole="button"
+      accessibilityState={{ selected: isFavorite }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.favoriteButton,
+        isFavorite && styles.favoriteButtonSelected,
+        pressed && styles.favoriteButtonPressed,
+      ]}
+    >
+      <Text
+        style={[
+          styles.favoriteButtonText,
+          isFavorite && styles.favoriteButtonTextSelected,
+        ]}
+      >
+        {isFavorite ? "♥  Đã yêu thích" : "♡  Thêm yêu thích"}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -272,6 +341,32 @@ const styles = StyleSheet.create({
   },
   languageSelector: {
     marginBottom: 18,
+  },
+  favoriteButton: {
+    minHeight: 44,
+    alignSelf: "flex-start",
+    justifyContent: "center",
+    marginBottom: 20,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    backgroundColor: colors.paper,
+  },
+  favoriteButtonSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.highlight,
+  },
+  favoriteButtonPressed: {
+    opacity: 0.75,
+  },
+  favoriteButtonText: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  favoriteButtonTextSelected: {
+    color: colors.primary,
   },
   languageSelectorLabel: {
     marginBottom: 9,

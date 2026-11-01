@@ -186,6 +186,20 @@ Dựa trên mục 11 của docs/PRD.md (AC-01 đến AC-14), tạo checklist ki�
 | 5 | Cả nhóm | Kiểm thử nghiệm thu, triển khai, tài liệu, demo | Viết README hướng dẫn cài đặt, biến môi trường, chạy local, chạy kiểm thử và triển khai cho từng thư mục |
 | 5 | C | Build APK (nếu cần) | Hướng dẫn build APK Android bằng EAS Build cho dự án Expo này, các bước cấu hình và lỗi thường gặp |
 
+### Task bổ sung cho thành viên C — Mobile
+
+Các task C1–C5 đã có khung điều hướng, quét QR, API, ngôn ngữ và TTS. Trong repo hiện tại, màn hình Yêu thích mới là trạng thái rỗng; lịch sử xem và chỉnh cỡ chữ chưa có. Ưu tiên hoàn tất các mục APP-08 đến APP-10 trước, sau đó kiểm thử trên thiết bị thật.
+
+| ID | Tuần | Task | Tiêu chí hoàn thành |
+| --- | --- | --- | --- |
+| C6 | 4 | Làm chức năng Yêu thích (APP-09) | Thêm/bỏ yêu thích từ danh sách hoặc chi tiết; lưu slug bằng AsyncStorage; tab Yêu thích tải và mở đúng hiện vật; trạng thái rỗng và lỗi đọc/ghi dữ liệu có thông báo. |
+| C7 | 4 | Làm Lịch sử đã xem (APP-08) | Ghi nhận sau khi tải chi tiết thành công; lưu tối đa 20 slug, hiện vật mới xem đứng đầu và không bị trùng; hiển thị trong tab Cá nhân, mở lại được chi tiết. |
+| C8 | 4 | Thêm chỉnh cỡ chữ (APP-10) | Cho chọn cỡ chữ trong tab Cá nhân; lưu bằng AsyncStorage; áp dụng cho nội dung chi tiết và giữ nguyên sau khi khởi động lại app; kiểm tra chữ không tràn màn hình. |
+| C9 | 4–5 | Kiểm thử mobile theo PRD | Lập checklist và kiểm tra APP-04 đến APP-07, APP-08 đến APP-10, AC-03 đến AC-07, AC-10, AC-13, AC-14: QR hợp lệ/không hợp lệ, từ chối quyền camera, mất mạng/thử lại, thiếu bản dịch/giọng đọc, đổi ngôn ngữ khi đang phát. Ghi bước tái hiện và kết quả. |
+| C10 | 5 | Chuẩn bị chạy demo trên điện thoại thật | Viết `mobile/README.md` về cài đặt, `EXPO_PUBLIC_API_URL`, chạy Expo Go và kiểm thử. Ghi rõ điện thoại không gọi được `localhost` của máy tính: dùng URL backend công khai hoặc IP LAN khi cùng mạng. Chạy lint, typecheck và thử luồng quét QR → chi tiết → đổi ngôn ngữ → TTS trên thiết bị thật. Build APK bằng EAS chỉ khi nhóm cần file cài đặt. |
+
+**Thứ tự làm:** C6–C8 là tính năng Should; C9–C10 cần hoàn tất trước buổi demo. Nếu thời gian gấp, ưu tiên C9–C10 và giữ lịch sử/yêu thích/cỡ chữ ở mức Should theo PRD.
+
 ## Lưu ý khi viết prompt
 
 - Luôn nêu mã chức năng hoặc mục PRD (ví dụ WEB-02, mục 6.2) để Copilot bám đúng đặc tả.

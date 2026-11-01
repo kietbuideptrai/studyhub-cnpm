@@ -13,7 +13,10 @@ export interface UseArtifactsResult {
   retry: () => void;
 }
 
-export function useArtifacts(language: Language, query: string): UseArtifactsResult {
+export function useArtifacts(
+  language: Language,
+  query = "",
+): UseArtifactsResult {
   const [state, setState] = useState<AsyncData<ArtifactListItem[]>>({
     status: "loading",
   });

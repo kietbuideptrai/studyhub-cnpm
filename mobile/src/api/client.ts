@@ -4,6 +4,10 @@ import type {
   ArtifactListItem,
   Language,
 } from "../../../shared/types";
+import {
+  getDemoArtifact,
+  getDemoArtifacts,
+} from "../../../shared/demoArtifacts";
 
 export class ApiRequestError extends Error {
   constructor(
@@ -20,6 +24,14 @@ export function getArtifacts(
   query: string,
   signal: AbortSignal,
 ): Promise<ArtifactListItem[]> {
+  if (isDemoMode()) {
+    if (signal.aborted) {
+      return Promise.reject(new Error("Request aborted."));
+    }
+
+    return Promise.resolve(getDemoArtifacts(language, query));
+  }
+
   const searchParams = new URLSearchParams({ lang: language });
   if (query.trim()) {
     searchParams.set("q", query.trim());
@@ -36,11 +48,28 @@ export function getArtifact(
   language: Language,
   signal: AbortSignal,
 ): Promise<ArtifactDetail> {
+  if (isDemoMode()) {
+    if (signal.aborted) {
+      return Promise.reject(new Error("Request aborted."));
+    }
+
+    const artifact = getDemoArtifact(slug, language);
+    if (!artifact) {
+      return Promise.reject(new ApiRequestError("Không tìm thấy hiện vật", 404));
+    }
+
+    return Promise.resolve(artifact);
+  }
+
   const searchParams = new URLSearchParams({ lang: language });
   return request<ArtifactDetail>(
     `/api/artifacts/${encodeURIComponent(slug)}?${searchParams.toString()}`,
     signal,
   );
+}
+
+function isDemoMode(): boolean {
+  return process.env.EXPO_PUBLIC_DEMO_MODE === "true";
 }
 
 async function request<T>(path: string, signal: AbortSignal): Promise<T> {

@@ -3,12 +3,14 @@ import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { LanguageProvider, useLanguage } from "@/context/LanguageContext";
+import { LocalDataProvider, useLocalData } from "@/context/LocalDataContext";
 import { colors } from "@/theme";
 
 function AppNavigator() {
   const { isLoading } = useLanguage();
+  const { isLoading: isLocalDataLoading } = useLocalData();
 
-  if (isLoading) {
+  if (isLoading || isLocalDataLoading) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={colors.primary} size="large" />
@@ -32,6 +34,11 @@ function AppNavigator() {
           name="artifacts/[slug]"
           options={{ title: "Chi tiết hiện vật" }}
         />
+        <Stack.Screen name="translate" options={{ title: "Dịch cụm từ" }} />
+        <Stack.Screen
+          name="translation-history"
+          options={{ title: "Lịch sử bản dịch" }}
+        />
       </Stack>
     </>
   );
@@ -41,7 +48,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <LanguageProvider>
-        <AppNavigator />
+        <LocalDataProvider>
+          <AppNavigator />
+        </LocalDataProvider>
       </LanguageProvider>
     </SafeAreaProvider>
   );
