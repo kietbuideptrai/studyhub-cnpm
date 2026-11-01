@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { Pool } from "pg";
 
+console.log(">>> DATABASE_URL đang là:", process.env.DATABASE_URL);
 const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
