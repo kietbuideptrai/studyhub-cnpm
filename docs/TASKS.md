@@ -1,208 +1,66 @@
-# Task theo ngày và prompt mẫu cho Copilot
+# Backlog MVP — Thuyết minh đa ngôn ngữ
 
-Danh sách task cho 3 người trong 3 ngày đầu (mục tiêu 40%), kèm prompt mẫu để dán vào Copilot Chat, rồi tổng quan task tuần 2–5.
+Backlog này phản ánh PRD 1.1 và hiện trạng code đã rà soát ngày 2026-11-02. Ưu tiên luồng QR → nội dung hiện vật → đổi ngôn ngữ → nghe thuyết minh. CMS, lịch sử xem và tốc độ TTS không phải mục tiêu MVP; code liên quan đang có được giữ nguyên, không mở rộng hoặc xóa trong các task này.
 
-## Cách dùng
+## Hiện trạng đã kiểm tra
 
-1. Lưu PRD vào repo thành `docs/PRD.md` để Copilot đọc được khi bạn nhắc tới mục liên quan.
-2. Đầu mỗi phiên chat, dán **prompt nền** bên dưới.
-3. Làm từng task nhỏ, chạy thử ngay rồi mới sang task tiếp theo; không sinh cả dự án một lần.
-4. Đọc lại code Copilot sinh ra, nhất là phần đăng nhập, truy vấn database và TTS.
+| Khu vực | Trạng thái hiện tại |
+| --- | --- |
+| Web | Có trang chủ, danh sách, chi tiết, chọn ngôn ngữ, TTS và demo data; `npm run build` đạt. `npm test` đạt 37/40, 3 test admin API thất bại do `VITE_API_URL` trong `.env.local` làm URL thành absolute thay vì relative như test mong đợi. |
+| Mobile | Có danh sách, tìm kiếm, quét QR, yêu cầu quyền camera, chi tiết, TTS và lưu ngôn ngữ; `npm run typecheck` và `npm run lint` đạt. Chưa có automated test suite riêng; cần kiểm thử trên thiết bị thật. |
+| Backend | Có API đọc hiện vật/ngôn ngữ và PostgreSQL pool. `GET /api/health` hiện chỉ trả `{ status: "ok" }`, chưa kiểm tra database. `npm run build` hiện lỗi vì cấu hình chưa commit `ignoreDeprecations: "6.0"` không hợp lệ với TypeScript 5.9.3 đang cài. |
+| Dữ liệu | `seed.sql` có 8 hiện vật với bản dịch Việt/Anh và URL ảnh placeholder; chưa đạt mốc 3 hiện vật × 5 ngôn ngữ trong PRD. Web demo có nội dung 5 ngôn ngữ nhưng là bản nháp. Chưa xác minh dữ liệu thực trên Supabase trong lần rà soát này. |
+| Phạm vi cũ | `docs/TASKS.md` trước đây còn giao CMS, upload ảnh và lịch sử xem như việc cần làm; các mục này không còn là tiêu chí MVP theo PRD 1.1. |
 
-## Prompt nền (dán đầu mỗi phiên)
+## P0 — Chặn build/test và tích hợp
 
-```text
-Bối cảnh: đồ án Thuyết minh tự động đa ngôn ngữ. Du khách quét QR để mở trang hiện vật, chọn ngôn ngữ (vi, en, zh, ja, ko), đọc và nghe thuyết minh bằng TTS.
-Stack: TypeScript. Web: React + Vite. Backend: Node.js + Express + PostgreSQL (Supabase). Mobile: React Native + Expo.
-Đặc tả nằm trong docs/PRD.md; hãy đọc mục liên quan trước khi viết code và giữ đúng tên trường, tên endpoint trong đó.
-Quy tắc: TypeScript strict, đặt tên rõ ràng, luôn xử lý trạng thái đang tải, lỗi và không có dữ liệu, không thêm thư viện nếu không cần. Cuối câu trả lời liệt kê file đã tạo hoặc sửa.
-```
+| ID | Task | Trạng thái | Phụ trách đề xuất | Tiêu chí hoàn thành |
+| --- | --- | --- | --- | --- |
+| P0-01 | Làm cho web tests độc lập với `.env.local` | Chưa làm | Web | `cd web && npm test` chạy ổn định với cấu hình demo local; 40/40 test qua. Test không phụ thuộc URL hoặc secret của môi trường cá nhân. |
+| P0-02 | Giải quyết mismatch cấu hình TypeScript backend | Chặn — cần rà soát thay đổi local | Backend | Rà soát thay đổi local trong `backend/tsconfig.json`; chọn cấu hình tương thích với phiên bản TypeScript khai báo/cài đặt, không ghi đè thay đổi chưa được duyệt. `cd backend && npm run build` thành công. |
 
-## Ngày 1 — Khung dự án (mục tiêu 10–15%)
+## P1 — Hoàn thành yêu cầu MVP cốt lõi
 
-### Việc chung của cả nhóm (buổi sáng, làm trước hết)
+| ID | Task | Trạng thái | Phụ trách đề xuất | Tiêu chí hoàn thành |
+| --- | --- | --- | --- | --- |
+| P1-01 | Sửa tìm kiếm backend theo tên Việt và Anh | Chưa làm | Backend | `q` tìm trong `artifacts.name` và title bản dịch `en`, không phân biệt hoa/thường, khớp một phần; kết quả không phụ thuộc `lang` đang hiển thị. Bổ sung test cho tìm Việt/Anh khi chọn `vi`, `en` và một ngôn ngữ khác; giữ lọc hiện vật đã xuất bản. |
+| P1-02 | Hoàn thiện bộ dữ liệu nghiệm thu | Chưa làm | Backend + Nội dung | Có ít nhất 3 hiện vật với đủ 5 bản dịch `vi/en/zh/ja/ko`, dữ liệu được người phụ trách rà soát. Thay ảnh placeholder bằng URL ảnh được phép sử dụng. Chạy import/seed có kiểm soát và xác nhận API trả đủ dữ liệu; không ghi đè dữ liệu hiện có ngoài dự kiến. |
+| P1-03 | Bổ sung fallback tiếng Anh có xác nhận trên web | Chưa làm | Web | Khi thiếu bản dịch đã chọn nhưng có `en`, hiện đúng popup theo PRD. “Xem tiếng Anh” tải nội dung tiếng Anh, ghi nhãn rõ tiếng Anh nhưng không đổi lựa chọn/ngôn ngữ URL đã lưu; “Hủy” không tự đổi ngôn ngữ. Nếu thiếu cả `en`, hiện trạng thái không có nội dung. Đặt thuộc tính `lang` theo nội dung thực tế; TTS không tự phát. Có test cho đủ các nhánh. |
+| P1-04 | Đưa TTS web về đúng trạng thái và thông báo PRD | Chưa làm | Web | Đổi ngôn ngữ/rời trang dừng voice và hàng đợi; không có nhiều lượt đọc chồng; không hiện “đang phát” trước khi engine bắt đầu; thiếu voice hoặc lỗi do thiếu voice hiển thị chính xác “Hiện giờ chưa có voice”, vẫn giữ văn bản. Có thể thử phát lại và kiểm tra voice lại. Bổ sung test cho đổi ngôn ngữ, unmount, thiếu voice và lỗi phát. |
+| P1-05 | Bổ sung trạng thái readiness backend/database | Chưa làm | Backend | `/api/health` kiểm tra backend và database riêng biệt, trả trạng thái có ý nghĩa khi DB không kết nối được và không làm lộ connection string/chi tiết bí mật. Có test cho DB thành công/thất bại; tài liệu hướng dẫn dùng endpoint trước demo được cập nhật. |
+| P1-06 | Chốt vận hành dữ liệu và kiểm tra Supabase | Chưa làm | Backend | Tài liệu nêu rõ cách áp dụng schema, seed/import an toàn và xác minh kết nối; xác nhận database mục tiêu có schema, ít nhất 3×5 bản dịch và API đọc hoạt động. Chỉ chạy import trên database đã xác nhận, không dùng seed ghi đè dữ liệu chưa kiểm tra. |
 
-| ID | Task | Người làm |
-| --- | --- | --- |
-| G1 | Tạo repo Git, quy ước nhánh, đưa PRD vào `docs/PRD.md` | A |
-| G2 | Chốt kiểu dữ liệu và ví dụ JSON cho API (mục 6 PRD) | Cả nhóm |
+## P2 — Nghiệm thu trải nghiệm web/mobile
 
-Prompt cho G2 (một người chạy, cả nhóm dùng chung kết quả):
+| ID | Task | Trạng thái | Phụ trách đề xuất | Tiêu chí hoàn thành |
+| --- | --- | --- | --- | --- |
+| P2-01 | Kiểm thử responsive mobile-first trên web | Chưa làm | Web | Kiểm tra viewport 320, 375, 390, 768 và 1440 CSS px; không cuộn ngang ngoài ý muốn, cắt/chồng nội dung; ảnh không méo; popup, ngôn ngữ và điều khiển TTS dùng được. Lưu kết quả Pass/Fail và thiết bị/trình duyệt. |
+| P2-02 | Kiểm thử accessibility web | Chưa làm | Web | Hoàn thành luồng chính bằng bàn phím; focus nhìn thấy, popup quản lý/trả focus; zoom 200% không mất chức năng; chữ chính ≥16 CSS px, tương phản văn bản thường ≥4.5:1, nút chính có vùng chạm ≥44×44 CSS px; kiểm tra screen reader, heading, alt text và `lang`. Ghi lại kết quả, sửa lỗi phát hiện. |
+| P2-03 | Kiểm thử luồng mobile trên thiết bị thật | Chưa làm | Mobile | Trên Android/iOS mục tiêu, kiểm tra quyền camera (cho phép/từ chối), QR đúng/sai, slug không tồn tại, mất mạng/thử lại, đổi ngôn ngữ khi TTS đang chạy, rời màn hình khi đang đọc, thiếu voice và VoiceOver/TalkBack. Ghi thiết bị/OS và kết quả. |
+| P2-04 | Đồng bộ tài liệu checklist mobile với phạm vi MVP | Chưa làm | Mobile + QA | `docs/MOBILE-TEST-CHECKLIST.md` không coi lịch sử là tiêu chí bắt buộc; có các case tìm tiếng Việt/Anh độc lập ngôn ngữ, TTS dừng đúng lúc và accessibility; có cột trạng thái/kết quả cho từng case. |
+| P2-05 | Đo mục tiêu tải nội dung trong điều kiện xác định | Chưa làm | Cả nhóm | Chọn và ghi thiết bị, trình duyệt, mạng di động; đo từ lúc mở URL hiện vật đến khi nội dung chính hiển thị. Báo kết quả so với mục tiêu ≤3 giây, không tuyên bố đạt nếu chưa đo. |
 
-```text
-Dựa trên mục 6 của docs/PRD.md, tạo file shared/types.ts gồm các kiểu: Language, ArtifactListItem, ArtifactDetail, Translation, ApiError. ApiError chỉ gồm { message: string } vì PRD chưa quy định payload lỗi.
-Tạo thêm docs/api-samples.json chứa ví dụ phản hồi cho: GET /api/artifacts?lang=vi, GET /api/artifacts/tank-001?lang=en (có bản dịch) và trường hợp translation = null kèm available_languages.
-Giữ đúng tên trường trong PRD.
-```
+## P3 — Đóng gói demo và bàn giao
 
-### Thành viên B — Backend
+| ID | Task | Trạng thái | Phụ trách đề xuất | Tiêu chí hoàn thành |
+| --- | --- | --- | --- | --- |
+| P3-01 | Chạy kiểm thử nghiệm thu xuyên suốt | Chưa làm | Cả nhóm | Kiểm tra QR → trang hiện vật → đổi ngôn ngữ → TTS trên web và app, cùng các nhánh lỗi trong AC của PRD. Ghi bug, kết quả và bằng chứng; không dùng chế độ demo để tuyên bố database đã kết nối. |
+| P3-02 | Chuẩn bị bản demo triển khai và QR | Chưa làm | Web + Backend + Mobile | Cấu hình URL HTTPS, CORS và môi trường không chứa secret trong repo; mở trực tiếp/tải lại URL QR thành công; app trên điện thoại truy cập được backend. Có cách dự phòng local khi dịch vụ demo không sẵn sàng. |
+| P3-03 | Hoàn thiện hướng dẫn chạy và bàn giao | Chưa làm | Cả nhóm | README hướng dẫn web demo/API thật, backend + Supabase, mobile Expo Go, biến môi trường và kiểm thử; không ghi giá trị secret. Xác nhận các lệnh build/test theo đúng trạng thái hiện tại. |
 
-**B1. Khởi tạo Express + TypeScript**
+## Không nằm trong backlog MVP
 
-```text
-Khởi tạo backend Express + TypeScript trong thư mục backend/ với cấu trúc src/routes, src/services, src/db. Bật CORS, dotenv, JSON parser. Thêm GET /api/health trả về {status: 'ok'}. Thêm script dev và build. Cho tôi lệnh cài đặt và nội dung từng file.
-```
+- Không triển khai hoặc mở rộng CMS, đăng nhập quản trị, CRUD qua giao diện, upload ảnh qua CMS.
+- Không mở rộng lịch sử xem hoặc điều chỉnh tốc độ TTS.
+- Không xóa các phần CMS/lịch sử đã có nếu chưa đánh giá phụ thuộc và chưa có yêu cầu riêng.
+- Yêu thích và chỉnh cỡ chữ mobile là Should; chỉ làm sau P0/P1 và các kiểm thử nghiệm thu bắt buộc.
 
-**B2. Schema và dữ liệu mẫu**
+## Thứ tự đề xuất
 
-```text
-Viết file SQL tạo 3 bảng theo mục 6.1 của PRD: artifacts, artifact_translations, admin_users. Ràng buộc: slug unique; unique (artifact_id, language_code); có created_at, updated_at.
-Viết thêm seed.sql với 5 hiện vật mẫu, mỗi hiện vật có bản dịch tiếng Việt và tiếng Anh (3-4 câu mỗi bản).
-```
+1. P0-02 để backend build được; P0-01 để suite web ổn định.
+2. P1-01, P1-02 để chốt tìm kiếm và nội dung mẫu.
+3. P1-03, P1-04 để hoàn thiện fallback và TTS web theo PRD.
+4. P1-05, P1-06 và P2-01–P2-05 để xác minh database, responsive và accessibility.
+5. P3-01–P3-03 trước buổi demo/nghiệm thu.
 
-**B3. API danh sách và chi tiết (tạm dùng dữ liệu mẫu)**
-
-```text
-Viết route GET /api/artifacts (hỗ trợ ?lang và ?q) và GET /api/artifacts/:slug (?lang) theo mục 6.2 của PRD, tạm đọc từ docs/api-samples.json. Trả 404 với { message: 'Không tìm thấy hiện vật' } khi không có slug. Khi thiếu bản dịch, trả translation = null kèm available_languages.
-```
-
-### Thành viên A — Frontend Web
-
-**A1. Khởi tạo React + Vite + Router**
-
-```text
-Khởi tạo web React + Vite + TypeScript trong thư mục web/. Cài react-router. Tạo 3 route: / (trang chủ), /artifacts (danh sách), /artifacts/:slug (chi tiết). Tạo layout có header và thanh chọn ngôn ngữ (vi, en, zh, ja, ko). Chưa gọi API.
-```
-
-**A2. Trang danh sách và tìm kiếm (dữ liệu mẫu)**
-
-```text
-Tạo trang /artifacts hiển thị danh sách hiện vật dạng thẻ (ảnh, tên, mô tả ngắn) từ docs/api-samples.json. Thêm ô tìm kiếm theo tên, lọc ở phía client. Có thông báo khi không có kết quả. Giao diện responsive, chữ dễ đọc, ảnh có alt text.
-```
-
-**A3. Trang chi tiết (dữ liệu mẫu)**
-
-```text
-Tạo trang /artifacts/:slug hiển thị ảnh, tiêu đề và nội dung theo ngôn ngữ đang chọn, chia đoạn dễ đọc. Có nút Nghe thuyết minh (chưa cần chạy). Hiển thị thông báo rõ ràng khi slug không tồn tại hoặc chưa có bản dịch.
-```
-
-### Thành viên C — Mobile
-
-**C1. Khởi tạo Expo và điều hướng**
-
-```text
-Khởi tạo app Expo + TypeScript trong thư mục mobile/ với điều hướng tab: Trang chủ, Hiện vật, Quét QR, Yêu thích, Cá nhân. Tab Quét QR nằm giữa và nổi bật hơn (nút tròn lớn). Mỗi tab tạm là màn hình trống có tiêu đề.
-```
-
-**C2. Danh sách hiện vật và tìm kiếm (dữ liệu mẫu)**
-
-```text
-Tạo màn hình Hiện vật dùng FlatList hiển thị thẻ hiện vật từ docs/api-samples.json, có ô tìm kiếm theo tên và thông báo khi không có kết quả. Bấm vào thẻ mở màn hình chi tiết hiển thị tiêu đề và nội dung.
-```
-
-**C3. Màn hình quét QR**
-
-```text
-Tạo màn hình Quét QR dùng expo-camera: xin quyền camera, quét mã QR, đọc URL, tách slug ở cuối đường dẫn /artifacts/:slug rồi chuyển sang màn hình chi tiết. Nếu QR không hợp lệ thì hiện thông báo và cho quét lại. Xử lý trường hợp người dùng từ chối quyền camera.
-```
-
-## Ngày 2 — Tích hợp luồng hiện vật (mục tiêu 25–30%)
-
-### Thành viên B — Backend
-
-**B4. Nối Supabase PostgreSQL**
-
-```text
-Thay phần đọc JSON mẫu bằng truy vấn PostgreSQL (Supabase) cho GET /api/artifacts và GET /api/artifacts/:slug. Dùng biến môi trường cho chuỗi kết nối, có file .env.example. Danh sách phải trả đúng title và summary theo ?lang, lọc theo ?q, chỉ lấy hiện vật is_published = true.
-```
-
-**B5. Xử lý lỗi, languages và triển khai**
-
-```text
-Thêm GET /api/languages, middleware xử lý lỗi thống nhất trả { message: '...' }, cấu hình CORS cho domain web và localhost. Viết hướng dẫn triển khai Express lên Render hoặc Railway (biến môi trường, lệnh build, lệnh start).
-```
-
-### Thành viên A — Frontend Web
-
-**A4. Gọi API thật**
-
-```text
-Tạo lớp gọi API trong web/src/api (dùng VITE_API_URL) và hook useArtifacts, useArtifact(slug, lang). Thay dữ liệu mẫu bằng API thật. Xử lý đang tải, lỗi mạng (có nút Thử lại), 404 và translation = null. Dùng kiểu trong shared/types.ts.
-```
-
-**A5. Chọn ngôn ngữ và ghi nhớ**
-
-```text
-Thêm chọn ngôn ngữ vào context toàn cục: lưu vào localStorage, đọc tham số ?lang= trên URL (ưu tiên URL), cập nhật URL khi đổi ngôn ngữ. Khi đổi ngôn ngữ ở trang chi tiết thì tải lại nội dung đúng ngôn ngữ.
-```
-
-**A6. TTS bằng Web Speech API**
-
-```text
-Viết hook useSpeech dùng window.speechSynthesis: nhận text và mã ngôn ngữ, ánh xạ vi->vi-VN, en->en-US, zh->zh-CN, ja->ja-JP, ko->ko-KR. Cắt text theo câu và đọc lần lượt. Có play, pause, resume, stop. Tự dừng khi đổi ngôn ngữ hoặc rời trang. Nếu thiết bị không có giọng cho ngôn ngữ đó, trả về cờ unavailable để giao diện hiện thông báo. Chỉ phát sau khi người dùng bấm nút (yêu cầu của iOS Safari).
-```
-
-### Thành viên C — Mobile
-
-**C4. Gọi API thật**
-
-```text
-Tạo lớp gọi API trong mobile/src/api (URL lấy từ cấu hình, có thể đổi khi chạy trên điện thoại thật) và hook lấy danh sách, chi tiết theo slug và ngôn ngữ. Thay dữ liệu mẫu bằng API thật; xử lý đang tải, lỗi mạng có nút Thử lại, 404 và translation = null.
-```
-
-**C5. Chi tiết, chọn ngôn ngữ và TTS**
-
-```text
-Trên màn hình chi tiết thêm chọn ngôn ngữ (lưu bằng AsyncStorage) và nút Nghe thuyết minh dùng expo-speech với mã ngôn ngữ vi-VN, en-US, zh-CN, ja-JP, ko-KR. Cắt text theo câu. Kiểm tra tài liệu Expo Speech: nếu pause/resume không hỗ trợ trên Android thì dùng cách dừng và đọc lại từ câu hiện tại. Dừng đọc khi đổi ngôn ngữ hoặc rời màn hình.
-```
-
-## Ngày 3 — Bản demo xuyên suốt (mục tiêu 40%)
-
-| ID | Task | Người làm | Kết quả cần đạt |
-| --- | --- | --- | --- |
-| D1 | Nhập bộ dữ liệu mẫu hoàn chỉnh vào database (5 hiện vật, tối thiểu 3 ngôn ngữ) | B | Web và app đọc được dữ liệu thật |
-| D2 | Triển khai backend và kiểm tra `/api/health` | B | URL backend công khai |
-| D3 | Triển khai web lên Vercel, trỏ về backend | A | Web chạy trên URL công khai |
-| D4 | Tạo mã QR cho 5 hiện vật từ URL web | A | 5 ảnh QR in thử được |
-| D5 | Chạy app trên điện thoại thật qua Expo Go | C | Quét QR rồi mở đúng hiện vật |
-| D6 | Chạy luồng QR → chi tiết → đổi ngôn ngữ → nghe trên cả web và app | Cả nhóm | Ghi lại lỗi còn tồn đọng |
-| D7 | Chốt kế hoạch 4 tuần tiếp theo | Cả nhóm | Danh sách việc theo tuần |
-
-**Prompt D4: tạo mã QR**
-
-```text
-Viết script Node.js (TypeScript) dùng thư viện qrcode: đọc danh sách slug từ file JSON, tạo ảnh PNG mã QR cho từng URL dạng https://<domain>/artifacts/<slug> vào thư mục qr/, đặt tên file theo slug. Domain lấy từ biến môi trường.
-```
-
-**Prompt D6: kiểm thử luồng chính**
-
-```text
-Dựa trên mục 11 của docs/PRD.md (AC-01 đến AC-14), tạo checklist kiểm thử thủ công dạng bảng markdown: mã tiêu chí, các bước thực hiện, kết quả mong đợi, cột trạng thái để trống. Ưu tiên các tiêu chí liên quan đến QR, đổi ngôn ngữ, TTS và lỗi mạng.
-```
-
-## Tuần 2–5 — Task tổng quan
-
-| Tuần | Người | Task | Prompt gợi ý (rút gọn) |
-| --- | --- | --- | --- |
-| 2 | B | Hoàn thiện dữ liệu 5 ngôn ngữ, kiểm tra truy vấn | Viết script import bản dịch từ file CSV vào artifact\_translations, báo lỗi khi thiếu slug hoặc mã ngôn ngữ sai |
-| 2 | A, C | Hoàn thiện giao diện, kiểm tra TTS tiếng Trung, Nhật, Hàn trên thiết bị thật | Viết hàm kiểm tra giọng đọc có sẵn theo mã ngôn ngữ và hiện thông báo thân thiện khi thiếu |
-| 3 | B | Đăng nhập quản trị và CRUD (ADM-01 đến ADM-04) | Viết POST /api/admin/auth/login dùng bcrypt và JWT, middleware kiểm tra token cho /api/admin, giới hạn số lần đăng nhập sai |
-| 3 | B | CRUD hiện vật và bản dịch | Viết POST, PATCH /api/admin/artifacts và PUT /api/admin/artifacts/:id/translations/:lang, kiểm tra dữ liệu đầu vào, trả lỗi rõ ràng |
-| 3 | A | Giao diện trang quản trị | Tạo trang /admin có form đăng nhập, bảng danh sách hiện vật, form thêm/sửa với tab theo ngôn ngữ, nút ẩn hiện vật |
-| 3 | A, C | Xử lý lỗi và trạng thái | Rà soát mọi màn hình: đang tải, lỗi mạng, không có dữ liệu, thiếu bản dịch, TTS không khả dụng; thêm thành phần dùng chung |
-| 4 | A | Chữ lớn, lịch sử xem, xem trước trong quản trị | Thêm chế độ chữ lớn lưu localStorage; lưu 20 hiện vật xem gần nhất và hiển thị ở trang chủ |
-| 4 | C | Lịch sử, yêu thích, cỡ chữ | Lưu lịch sử và danh sách yêu thích bằng AsyncStorage, thêm màn hình Yêu thích và chỉnh cỡ chữ trong tab Cá nhân |
-| 4 | B | Tải ảnh lên (ADM-06) | Viết POST /api/admin/uploads tải ảnh lên Supabase Storage, giới hạn loại và dung lượng file, trả về URL công khai |
-| 5 | Cả nhóm | Kiểm thử nghiệm thu, triển khai, tài liệu, demo | Viết README hướng dẫn cài đặt, biến môi trường, chạy local, chạy kiểm thử và triển khai cho từng thư mục |
-| 5 | C | Build APK (nếu cần) | Hướng dẫn build APK Android bằng EAS Build cho dự án Expo này, các bước cấu hình và lỗi thường gặp |
-
-### Task bổ sung cho thành viên C — Mobile
-
-Các task C1–C5 đã có khung điều hướng, quét QR, API, ngôn ngữ và TTS. Trong repo hiện tại, màn hình Yêu thích mới là trạng thái rỗng; lịch sử xem và chỉnh cỡ chữ chưa có. Ưu tiên hoàn tất các mục APP-08 đến APP-10 trước, sau đó kiểm thử trên thiết bị thật.
-
-| ID | Tuần | Task | Tiêu chí hoàn thành |
-| --- | --- | --- | --- |
-| C6 | 4 | Làm chức năng Yêu thích (APP-09) | Thêm/bỏ yêu thích từ danh sách hoặc chi tiết; lưu slug bằng AsyncStorage; tab Yêu thích tải và mở đúng hiện vật; trạng thái rỗng và lỗi đọc/ghi dữ liệu có thông báo. |
-| C7 | 4 | Làm Lịch sử đã xem (APP-08) | Ghi nhận sau khi tải chi tiết thành công; lưu tối đa 20 slug, hiện vật mới xem đứng đầu và không bị trùng; hiển thị trong tab Cá nhân, mở lại được chi tiết. |
-| C8 | 4 | Thêm chỉnh cỡ chữ (APP-10) | Cho chọn cỡ chữ trong tab Cá nhân; lưu bằng AsyncStorage; áp dụng cho nội dung chi tiết và giữ nguyên sau khi khởi động lại app; kiểm tra chữ không tràn màn hình. |
-| C9 | 4–5 | Kiểm thử mobile theo PRD | Lập checklist và kiểm tra APP-04 đến APP-07, APP-08 đến APP-10, AC-03 đến AC-07, AC-10, AC-13, AC-14: QR hợp lệ/không hợp lệ, từ chối quyền camera, mất mạng/thử lại, thiếu bản dịch/giọng đọc, đổi ngôn ngữ khi đang phát. Ghi bước tái hiện và kết quả. |
-| C10 | 5 | Chuẩn bị chạy demo trên điện thoại thật | Viết `mobile/README.md` về cài đặt, `EXPO_PUBLIC_API_URL`, chạy Expo Go và kiểm thử. Ghi rõ điện thoại không gọi được `localhost` của máy tính: dùng URL backend công khai hoặc IP LAN khi cùng mạng. Chạy lint, typecheck và thử luồng quét QR → chi tiết → đổi ngôn ngữ → TTS trên thiết bị thật. Build APK bằng EAS chỉ khi nhóm cần file cài đặt. |
-
-**Thứ tự làm:** C6–C8 là tính năng Should; C9–C10 cần hoàn tất trước buổi demo. Nếu thời gian gấp, ưu tiên C9–C10 và giữ lịch sử/yêu thích/cỡ chữ ở mức Should theo PRD.
-
-## Lưu ý khi viết prompt
-
-- Luôn nêu mã chức năng hoặc mục PRD (ví dụ WEB-02, mục 6.2) để Copilot bám đúng đặc tả.
-- Mỗi prompt chỉ một việc; kết quả sai thì sửa prompt rồi hỏi lại thay vì chồng thêm yêu cầu.
-- Nhờ Copilot giải thích đoạn code chưa hiểu, vì cả nhóm cần giải thích được sản phẩm khi bảo vệ.
-- Hỏi giảng viên xem đồ án có được dùng công cụ AI không và có phải khai báo không.
+Task không được đánh dấu hoàn thành chỉ vì code đã tồn tại; cần đạt tiêu chí và có kết quả kiểm thử tương ứng.
